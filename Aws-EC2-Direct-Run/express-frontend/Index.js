@@ -101,7 +101,7 @@ app.post('/submit', async (req, res) => {
   const { name, email, message } = req.body;
 
   try {
-    await axios.post('http://feedback-backend-service:5000/submit', { name, email, message }, {
+    await axios.post('http://3.109.209.44:5000/submit', { name, email, message }, {
       headers: { 'Content-Type': 'application/json' }
     });
 
