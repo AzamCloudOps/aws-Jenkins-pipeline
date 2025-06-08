@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Frontend') {
+            steps {
+                dir('frontend-express') {
+                    echo "Cloned frontend-express folder"
+                }
+            }
+        }
+
+        stage('Install Node Modules') {
+            steps {
+                dir('frontend-express') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Run Express App') {
+            steps {
+                dir('frontend-express') {
+                    sh 'pm2 restart express-app || pm2 start index.js --name express-app'
+                }
+            }
+        }
+    }
+}

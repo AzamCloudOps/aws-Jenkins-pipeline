@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Backend') {
+            steps {
+                dir('backend-flask') {
+                    echo "Cloned backend-flask folder"
+                }
+            }
+        }
+
+        stage('Install Flask Dependencies') {
+            steps {
+                dir('backend-flask') {
+                    sh 'pip install -r requirements.txt'
+                }
+            }
+        }
+
+        stage('Run Flask App') {
+            steps {
+                dir('backend-flask') {
+                    sh 'pm2 restart flask-app || pm2 start app.py --name flask-app'
+                }
+            }
+        }
+    }
+}
