@@ -1,91 +1,77 @@
-########################################
-# CI/CD Deployment Assignment - Bash
-# Flask + Express on EC2 with Jenkins
-########################################
+# --------------------------------------
+# Part 2: Setup CI/CD with Jenkins
+# --------------------------------------
 
-# -------------------------------
-# 1. Update System & Install Dependencies
-# -------------------------------
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl python3-pip nodejs npm openjdk-17-jdk
+# Step 1: Install Jenkins on EC2
+sudo apt update
+sudo apt install openjdk-11-jdk -y
 
-# -------------------------------
-# 2. Install Jenkins
-# -------------------------------
-curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | sudo tee \
-  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
-
-echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-  https://pkg.jenkins.io/debian binary/ | sudo tee \
-  /etc/apt/sources.list.d/jenkins.list > /dev/null
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+echo "deb https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list
 
 sudo apt update
-sudo apt install -y jenkins
-sudo systemctl enable jenkins
+sudo apt install jenkins -y
 sudo systemctl start jenkins
+sudo systemctl enable jenkins
 
-# -------------------------------
-# 3. Note Jenkins Password
-# -------------------------------
+# Step 2: Access Jenkins Web UI
+# URL: http://<EC2_PUBLIC_IP>:8080
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
-# -------------------------------
-# 4. Install PM2 Globally
-# -------------------------------
-sudo npm install -g pm2
+# Step 3: Install Jenkins Plugins
+# - Git Plugin
+# - NodeJS Plugin
+# - Pipeline Plugin
+# - (Optional) ShiningPanda Plugin for Python environments
 
-# -------------------------------
-# 5. Clone Project Repository
-# -------------------------------
-cd ~
-git clone https://github.com/AzamCloudOps/aws-Jenkins-pipeline.git
-cd aws-Jenkins-pipeline
+# Step 4: Jenkinsfile for Flask App (flask-backend/Jenkinsfile)
+pipeline {
+  agent any
+  stages {
+    stage('Clone') {
+      steps {
+        git url: 'https://github.com/yourusername/flask-backend.git'
+      }
+    }
+    stage('Install & Deploy') {
+      steps {
+        sh 'pip3 install -r requirements.txt'
+        sh 'pm2 restart flask-app || pm2 start app.py --name flask-app'
+      }
+    }
+  }
+}
 
-# -------------------------------
-# 6. Setup Backend (Flask)
-# -------------------------------
-cd backend-flask
-pip3 install -r requirements.txt
-pm2 start app.py --interpreter python3 --name flask-app
+# Step 5: Jenkinsfile for Express App (express-frontend/Jenkinsfile)
+pipeline {
+  agent any
+  stages {
+    stage('Clone') {
+      steps {
+        git url: 'https://github.com/yourusername/express-frontend.git'
+      }
+    }
+    stage('Install & Deploy') {
+      steps {
+        sh 'npm install'
+        sh 'pm2 restart express-app || pm2 start server.js --name express-app'
+      }
+    }
+  }
+}
 
-# -------------------------------
-# 7. Setup Frontend (Express)
-# -------------------------------
-cd ../frontend-express
-npm install
-pm2 start index.js --name express-app
+# Step 6: Create Jenkins Pipeline Jobs
+# Jenkins Dashboard → New Item → Pipeline
+# Provide GitHub repository link and use Jenkinsfile
 
-# -------------------------------
-# 8. Setup PM2 Startup Script (Optional)
-# -------------------------------
-pm2 startup systemd
-pm2 save
+# Step 7: Setup GitHub Webhook
+# GitHub → Settings → Webhooks → Add Webhook
+# Payload URL: http://<EC2_PUBLIC_IP>:8080/github-webhook/
+# Content type: application/json
+# Event: Push Events
 
-# -------------------------------
-# 9. Access Apps in Browser
-# -------------------------------
-# Flask App  : http://<EC2-PUBLIC-IP>:5000
-# Express App: http://<EC2-PUBLIC-IP>:3000
+# Step 8: Test CI/CD Flow
+# Push code to GitHub → Jenkins auto-triggers → Deploys with PM2
 
-# -------------------------------
-# 10. Jenkins Pipelines Configuration (manual in UI)
-# -------------------------------
-# Job 1: flask-pipeline
-#   → Pipeline from SCM
-#   → Repo: https://github.com/AzamCloudOps/aws-Jenkins-pipeline.git
-#   → Script Path: backend-flask/Jenkinsfile
-
-# Job 2: express-pipeline
-#   → Pipeline from SCM
-#   → Repo: https://github.com/AzamCloudOps/aws-Jenkins-pipeline.git
-#   → Script Path: frontend-express/Jenkinsfile
-
-# -------------------------------
-# 11. Setup GitHub Webhook (Optional)
-# -------------------------------
-# Go to GitHub Repo > Settings > Webhooks > Add Webhook
-# URL: http://<EC2-PUBLIC-IP>:8080/github-webhook/
-# Content Type: application/json
-# Event: Just the push event
-
-# Done 
+# Final Check: View PM2 process
+pm2 list
