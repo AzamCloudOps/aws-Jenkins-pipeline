@@ -1,63 +1,42 @@
-# -----------------------------
-# Step 1: Update & Install Dependencies
-# -----------------------------
+# --------------------------------------------------
+# Part 1: Deploy Flask and Express on Single EC2
+# --------------------------------------------------
 
-sudo apt update -y
-sudo apt install -y python3 python3-pip git
+# Step 1: Launch EC2 (Ubuntu 22.04), open ports 22, 3000, 5000
 
-# Node.js 18 Installation
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs
+# Step 2: SSH into EC2
+ssh -i my-key.pem ubuntu@<EC2_PUBLIC_IP>
 
-# Install PM2 globally
-sudo npm install -g pm2
+# Step 3: Install Required Packages
+sudo apt update
+sudo apt install python3-pip nodejs npm git -y
 
-# -----------------------------
-# Step 2: Clone Your Project Repo
-# -----------------------------
+# Step 4: Clone App Repositories
+git clone https://github.com/yourusername/flask-backend.git
+git clone https://github.com/yourusername/express-frontend.git
 
-cd ~
-git clone https://github.com/AzamCloudOps/aws-Jenkins-pipeline.git
-cd aws-Jenkins-pipeline
-
-# -----------------------------
-# Step 3: Setup Flask App
-# -----------------------------
-
-cd backend-flask
+# Step 5: Install Dependencies
+cd flask-backend
 pip3 install -r requirements.txt
 
-# Start Flask app on port 5000 using PM2
-pm2 start app.py --interpreter python3 --name flask-app
-
-# -----------------------------
-# Step 4: Setup Express App
-# -----------------------------
-
-cd ../frontend-express
+cd ../express-frontend
 npm install
 
-# Start Express app on port 3000 using PM2
-pm2 start index.js --name express-app
+# Step 6: Ensure Flask runs on port 5000 and Express on 3000
+# Modify app.py and server.js as needed
 
-# -----------------------------
-# Step 5: Enable PM2 on Boot
-# -----------------------------
+# Step 7: Start Apps with PM2
+sudo npm install -g pm2
 
-pm2 startup
-# Follow the instructions shown (usually a sudo command like "sudo env PATH=... pm2 startup systemd -u ubuntu --hp /home/ubuntu")
+cd ~/flask-backend
+pm2 start app.py --name flask-app
+
+cd ~/express-frontend
+pm2 start server.js --name express-app
 
 pm2 save
+pm2 startup
 
-# -----------------------------
-# Step 6: Check Apps
-# -----------------------------
-
-pm2 list
-pm2 logs
-
-# -----------------------------
-# Access in Browser:
-# Flask App:    http://<Your-EC2-IP>:5000
-# Express App:  http://<Your-EC2-IP>:3000
-# -----------------------------
+# Verify:
+# - http://<EC2_PUBLIC_IP>:5000 (Flask)
+# - http://<EC2_PUBLIC_IP>:3000 (Express)
